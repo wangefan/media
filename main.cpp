@@ -12,7 +12,7 @@ int main() {
   Properties properties;
   // Audio test properties
   properties.SetProperty("audio_test", 1); // 音频测试模式
-  properties.SetProperty("input_pcm_name", "48000_2_s16le.pcm");
+  properties.SetProperty("input_pcm_name", "count.pcm");
   // 麦克风采样属性
   properties.SetProperty("mic_sample_fmt", AV_SAMPLE_FMT_S16);
   properties.SetProperty("mic_sample_rate", 48000);

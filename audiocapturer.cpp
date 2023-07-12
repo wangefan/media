@@ -86,7 +86,7 @@ RET_CODE AudioCapturer::Init(std::unique_ptr<Properties> properties) {
   if (!pcm_per_frame_) {
     return RET_ERR_OUTOFMEMORY;
   }
-  if (openPcmFile(input_pcm_name.c_str()) < 0) {
+  if (openPcmFile(input_pcm_name.c_str()) != RET_OK) {
     LogInfo("openPcmFile %s failed", input_pcm_name.c_str());
     return RET_FAIL;
   }

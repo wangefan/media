@@ -1,16 +1,59 @@
 #include <functional>
 #include "pushworker.h"
 #include "dlog.h"
+#include "audiocapturer.h"
+#include "aacencoder.h"
+#include "avpublishtime.h"
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
 
-PushWorker::PushWorker() {}
-PushWorker::~PushWorker() {}
+PushWorker::PushWorker() : a_frame_(nullptr) {}
+PushWorker::~PushWorker() {
+  if (a_frame_ != nullptr) {
+    av_frame_free(&a_frame_);
+  }
+}
+static FILE *g_aac_fp_ = nullptr;
 
+// callback from AudioCapturer, callback one frame pcm data with
+// nb_samples * channels * byte_per_sample
 void PushWorker::PcmCallback(uint8_t *pcm, int32_t size) {
   LogInfo("PushWorker::PcmCallback(..) called: size:%d\n", size);
+  int64_t pts = (int64_t)AVPublishTime::GetInstance()->get_audio_pts();
+  resampler_->convertToFlat(a_frame_, pcm, size);
+  RET_CODE encode_ret = RET_OK;
+  AVPacket *packet = audio_encoder_->Encode(a_frame_, pts, encode_ret);
+  if(encode_ret != RET_OK) {
+    LogError("PushWorker::PcmCallback, audio_encoder_->Encode failed");
+    return;
+  }
+  LogInfo("PushWorker::PcmCallback(..) audio_encoder_->Encode ok, packet = %d\n", packet);
+  if (encode_ret == RET_OK && packet) {
+    if (!g_aac_fp_) {
+      g_aac_fp_ = fopen("push_dump.aac", "wb");
+      if (!g_aac_fp_) {
+        LogError("fopen push_dump.aac failed");
+        return;
+      }
+    }
+    if (g_aac_fp_) {
+      uint8_t adts_header[7];
+      if (audio_encoder_->GetAdtsHeader(adts_header, packet->size) != RET_OK) {
+        LogError("GetAdtsHeader failed");
+        return;
+      }
+      fwrite(adts_header, 1, 7, g_aac_fp_);
+      fwrite(packet->data, 1, packet->size, g_aac_fp_);
+      LogInfo("PushWorker::PcmCallback(..) write file ok: size:%d\n", size);
+    }
+    av_packet_free(&packet);
+  }
 }
 
 RET_CODE PushWorker::Init(const Properties &properties) {
   // 设置音频捕获
+  const auto nb_samples = 1024;
   audio_capturer_ = std::make_unique<AudioCapturer>();
   auto aud_cap_properties = std::make_unique<Properties>();
   aud_cap_properties->SetProperty("audio_test",
@@ -23,16 +66,47 @@ RET_CODE PushWorker::Init(const Properties &properties) {
   aud_cap_properties->SetProperty("channels",
                                   properties.GetProperty("mic_channels"));
 
-  aud_cap_properties->SetProperty("nb_samples", 1024); // 由编码器提供 // fix me
+  aud_cap_properties->SetProperty("nb_samples", nb_samples);
   aud_cap_properties->SetProperty("byte_per_sample", 2); // fix me
   if (audio_capturer_->Init(std::move(aud_cap_properties)) != RET_OK) {
     LogError("AudioCapturer Init failed");
     return RET_FAIL;
   }
-
   audio_capturer_->AddCallback(std::bind(&PushWorker::PcmCallback, this,
                                          std::placeholders::_1,
                                          std::placeholders::_2));
+
+  // init aac encoder
+  const auto encode_channels = 2;
+  
+  const auto sample_rate = 44100;
+  const auto encode_sample_fmt = AV_SAMPLE_FMT_FLTP;
+  auto aac_encoder_properties = std::make_unique<Properties>();
+  aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_CHANNELS,
+                                      encode_channels);
+  aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_NB_SAMPLES, nb_samples);
+  aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_SAMPLE_RATE,
+                                      sample_rate);
+  aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_SAMPLE_FMT, encode_sample_fmt);
+  audio_encoder_ = std::make_unique<AACEncoder>();
+  if (audio_encoder_->Init(std::move(aac_encoder_properties)) != RET_OK) {
+    LogError("AACEncoder Init failed");
+    return RET_FAIL;
+  }
+
+  //Init Resampler
+  resampler_ = std::make_unique<Resampler>();
+
+  // init aac frame, it is resampled from pcm frame and intent to be encoded.
+  a_frame_ = av_frame_alloc();
+  a_frame_->format = encode_sample_fmt;
+  a_frame_->nb_samples = nb_samples;
+  a_frame_->channels = encode_channels;
+  a_frame_->channel_layout = av_get_default_channel_layout(encode_channels);
+  if(av_frame_get_buffer(a_frame_, 0) < 0) {
+    LogError("av_frame_get_buffer failed");
+    return RET_FAIL;
+  }
 
   return RET_OK;
 }

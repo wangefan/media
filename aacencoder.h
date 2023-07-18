@@ -21,8 +21,7 @@ public:
 
   RET_CODE Init(std::unique_ptr<Properties> properties);
 
-  virtual AVPacket *Encode(AVFrame *frame, const int64_t pts,
-                           RET_CODE &ret_code);
+  virtual RET_CODE Encode(AVFrame *frame, AVPacket *packet, const int64_t pts);
   RET_CODE GetAdtsHeader(uint8_t *adts_header, int aac_length);
   int GetFrameSize();
 

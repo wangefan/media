@@ -51,17 +51,16 @@ RET_CODE AACEncoder::Init(std::unique_ptr<Properties> properties) {
   return RET_OK;
 }
 
-AVPacket *AACEncoder::Encode(AVFrame *frame, const int64_t pts,
-                             RET_CODE &ret_code) {
+RET_CODE AACEncoder::Encode(AVFrame *frame, AVPacket *packet,
+                            const int64_t pts) {
+  LogInfo("AACEncoder::Encode called\n");
   if (!codec_ctx_) {
-    ret_code = RET_FAIL;
     LogInfo("AACEncoder::Encode, codec_ctx_ is nullptr");
-    return nullptr;
+    return RET_FAIL;
   }
   if (!frame) {
-    ret_code = RET_FAIL;
     LogInfo("AACEncoder::Encode, frame is nullptr");
-    return nullptr;
+    return RET_FAIL;
   }
 
   frame->pts = pts;
@@ -73,46 +72,41 @@ AVPacket *AACEncoder::Encode(AVFrame *frame, const int64_t pts,
       LogInfo("AACEncoder::Encode, avcodec_send_frame failed with EAGAIN, "
               "ret_encode=%d",
               ret_encode);
-      ret_code = RET_ERR_EAGAIN;
+      return RET_ERR_EAGAIN;
     } else if (ret_encode == AVERROR_EOF) {
       LogInfo("AACEncoder::Encode, avcodec_send_frame failed with AVERROR_EOF, "
               "ret_encode=%d",
               ret_encode);
-      ret_code = RET_ERR_EOF;
+      return RET_ERR_EOF;
     } else {
       LogInfo("AACEncoder::Encode, avcodec_send_frame failed, ret_encode=%d",
               ret_encode);
-      ret_code = RET_FAIL;
+      return RET_FAIL;
     }
-
-    return nullptr;
   }
 
-  AVPacket *packet = av_packet_alloc();
+  av_packet_unref(packet);
   ret_encode = avcodec_receive_packet(codec_ctx_, packet);
   if (ret_encode != RET_OK) {
-    av_packet_free(&packet);
     if (ret_encode == AVERROR(EAGAIN)) {
       LogInfo("AACEncoder::Encode, avcodec_receive_packet failed with EAGAIN, "
               "ret_encode=%d",
               ret_encode);
-      ret_code = RET_ERR_EAGAIN;
+      return RET_ERR_EAGAIN;
     } else if (ret_encode == AVERROR_EOF) {
       LogInfo(
           "AACEncoder::Encode, avcodec_receive_packet failed with AVERROR_EOF, "
           "ret_encode=%d",
           ret_encode);
-      ret_code = RET_ERR_EOF;
+      return RET_ERR_EOF;
     } else {
       LogInfo(
           "AACEncoder::Encode, avcodec_receive_packet failed, ret_encode=%d",
           ret_encode);
-      ret_code = RET_FAIL;
+      return RET_FAIL;
     }
-
-    return nullptr;
   }
-  return packet;
+  return RET_OK;
 }
 
 RET_CODE AACEncoder::GetAdtsHeader(uint8_t *adts_header, int aac_length) {

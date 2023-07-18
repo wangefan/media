@@ -8,13 +8,35 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 
-PushWorker::PushWorker() : a_frame_(nullptr) {}
+PushWorker::PushWorker() : a_frame_(nullptr), a_packet_(nullptr) {}
 PushWorker::~PushWorker() {
   if (a_frame_ != nullptr) {
     av_frame_free(&a_frame_);
   }
+  if (a_packet_ != nullptr) {
+    av_packet_free(&a_packet_);
+  }
 }
 static FILE *g_aac_fp_ = nullptr;
+
+void PushWorker::dumpToAACFile(AVPacket *packet) {
+  if (!g_aac_fp_) {
+    g_aac_fp_ = fopen("push_dump.aac", "wb");
+    if (!g_aac_fp_) {
+      LogError("fopen push_dump.aac failed");
+      return;
+    }
+  }
+  if (g_aac_fp_) {
+    uint8_t adts_header[7];
+    if (audio_encoder_->GetAdtsHeader(adts_header, packet->size) != RET_OK) {
+      LogError("GetAdtsHeader failed");
+      return;
+    }
+    fwrite(adts_header, 1, 7, g_aac_fp_);
+    fwrite(packet->data, 1, packet->size, g_aac_fp_);
+  }
+}
 
 // callback from AudioCapturer, callback one frame pcm data with
 // nb_samples * channels * byte_per_sample
@@ -22,34 +44,15 @@ void PushWorker::PcmCallback(uint8_t *pcm, int32_t size) {
   LogInfo("PushWorker::PcmCallback(..) called: size:%d\n", size);
   int64_t pts = (int64_t)AVPublishTime::GetInstance()->get_audio_pts();
   resampler_->convertToFlt(a_frame_, pcm, size);
-  RET_CODE encode_ret = RET_OK;
-  AVPacket *packet = audio_encoder_->Encode(a_frame_, pts, encode_ret);
+  RET_CODE encode_ret = audio_encoder_->Encode(a_frame_, a_packet_, pts);
   if (encode_ret != RET_OK) {
     LogError("PushWorker::PcmCallback, audio_encoder_->Encode failed");
     return;
   }
   LogInfo(
-      "PushWorker::PcmCallback(..) audio_encoder_->Encode ok, packet = %d\n",
-      packet);
-  if (encode_ret == RET_OK && packet) {
-    if (!g_aac_fp_) {
-      g_aac_fp_ = fopen("push_dump.aac", "wb");
-      if (!g_aac_fp_) {
-        LogError("fopen push_dump.aac failed");
-        return;
-      }
-    }
-    if (g_aac_fp_) {
-      uint8_t adts_header[7];
-      if (audio_encoder_->GetAdtsHeader(adts_header, packet->size) != RET_OK) {
-        LogError("GetAdtsHeader failed");
-        return;
-      }
-      fwrite(adts_header, 1, 7, g_aac_fp_);
-      fwrite(packet->data, 1, packet->size, g_aac_fp_);
-      LogInfo("PushWorker::PcmCallback(..) write file ok: size:%d\n", size);
-    }
-    av_packet_free(&packet);
+      "PushWorker::PcmCallback(..) audio_encoder_->Encode ok\n");
+  if (encode_ret == RET_OK) {
+    dumpToAACFile(a_packet_);
   }
 }
 
@@ -110,6 +113,9 @@ RET_CODE PushWorker::Init(const Properties &properties) {
     LogError("av_frame_get_buffer failed");
     return RET_FAIL;
   }
+
+  // init aac packet, it is encoded from aac frame.
+  a_packet_ = av_packet_alloc();
 
   return RET_OK;
 }

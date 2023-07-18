@@ -14,6 +14,7 @@ public:
 
   RET_CODE Init(const Properties &properties);
   RET_CODE Start();
+  RET_CODE Stop();
   void PcmCallback(uint8_t *pcm, int32_t size);
 
 private:

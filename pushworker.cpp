@@ -1,9 +1,9 @@
-#include <functional>
 #include "pushworker.h"
-#include "dlog.h"
-#include "audiocapturer.h"
 #include "aacencoder.h"
+#include "audiocapturer.h"
 #include "avpublishtime.h"
+#include "dlog.h"
+#include <functional>
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
@@ -21,14 +21,16 @@ static FILE *g_aac_fp_ = nullptr;
 void PushWorker::PcmCallback(uint8_t *pcm, int32_t size) {
   LogInfo("PushWorker::PcmCallback(..) called: size:%d\n", size);
   int64_t pts = (int64_t)AVPublishTime::GetInstance()->get_audio_pts();
-  resampler_->convertToFlat(a_frame_, pcm, size);
+  resampler_->convertToFlt(a_frame_, pcm, size);
   RET_CODE encode_ret = RET_OK;
   AVPacket *packet = audio_encoder_->Encode(a_frame_, pts, encode_ret);
-  if(encode_ret != RET_OK) {
+  if (encode_ret != RET_OK) {
     LogError("PushWorker::PcmCallback, audio_encoder_->Encode failed");
     return;
   }
-  LogInfo("PushWorker::PcmCallback(..) audio_encoder_->Encode ok, packet = %d\n", packet);
+  LogInfo(
+      "PushWorker::PcmCallback(..) audio_encoder_->Encode ok, packet = %d\n",
+      packet);
   if (encode_ret == RET_OK && packet) {
     if (!g_aac_fp_) {
       g_aac_fp_ = fopen("push_dump.aac", "wb");
@@ -87,14 +89,15 @@ RET_CODE PushWorker::Init(const Properties &properties) {
   aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_NB_SAMPLES, nb_samples);
   aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_SAMPLE_RATE,
                                       sample_rate);
-  aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_SAMPLE_FMT, encode_sample_fmt);
+  aac_encoder_properties->SetProperty(AAC_ENCODER_PROP_SAMPLE_FMT,
+                                      encode_sample_fmt);
   audio_encoder_ = std::make_unique<AACEncoder>();
   if (audio_encoder_->Init(std::move(aac_encoder_properties)) != RET_OK) {
     LogError("AACEncoder Init failed");
     return RET_FAIL;
   }
 
-  //Init Resampler
+  // Init Resampler
   resampler_ = std::make_unique<Resampler>();
 
   // init aac frame, it is resampled from pcm frame and intent to be encoded.
@@ -103,7 +106,7 @@ RET_CODE PushWorker::Init(const Properties &properties) {
   a_frame_->nb_samples = nb_samples;
   a_frame_->channels = encode_channels;
   a_frame_->channel_layout = av_get_default_channel_layout(encode_channels);
-  if(av_frame_get_buffer(a_frame_, 0) < 0) {
+  if (av_frame_get_buffer(a_frame_, 0) < 0) {
     LogError("av_frame_get_buffer failed");
     return RET_FAIL;
   }
@@ -116,6 +119,17 @@ RET_CODE PushWorker::Start() {
     LogError("AudioCapturer Start failed");
     return RET_FAIL;
   }
+
+  return RET_OK;
+}
+
+RET_CODE PushWorker::Stop() {
+  /*
+   * must stop audio capturer first since there is
+   * callback from audio capturer, would crash if release
+   * encoder or other first without release capturer.
+   */
+  audio_capturer_->Stop();
 
   return RET_OK;
 }

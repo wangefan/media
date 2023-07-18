@@ -2,7 +2,7 @@
 #include "mediabase.h"
 #include "pushworker.h"
 #include "utility.h"
-#include <iostream>
+#include<stdio.h>
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
@@ -26,7 +26,10 @@ int main() {
     LogError("PushWorker start failed");
     return -1;
   }
-  cout << "PushWorker Start ok" << endl;
+  printf("PushWorker Start ok\n");
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
   getchar();
+  push_worker.Stop();
+  printf("PushWorker end\n");
   return 0;
 }

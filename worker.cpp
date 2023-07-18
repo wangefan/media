@@ -4,6 +4,7 @@
 Worker::Worker() { is_running_ = false; }
 
 Worker::~Worker() {
+  LogInfo("Worker::~Worker called\n");
   if (is_running_) {
     Stop();
   }

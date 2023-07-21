@@ -135,7 +135,7 @@ cd ~/ffmpeg_sources && \
  make install && \
  hash -r
  
-sudo sh -c "echo '/home/wangefan/ffmpeg_build/lib/' >> /etc/ld.so.conf"
+sudo sh -c "echo $HOME/ffmpeg_build/lib/ >> /etc/ld.so.conf"
 sudo ldconfig
 
 echo "腳本執行完成"

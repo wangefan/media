@@ -4,7 +4,7 @@
 Worker::Worker() { is_running_ = false; }
 
 Worker::~Worker() {
-  LogInfo("Worker::~Worker called\n");
+  LogInfo("Worker::~Worker called");
   if (is_running_) {
     Stop();
   }
@@ -23,10 +23,10 @@ RET_CODE Worker::Start() {
 }
 
 void Worker::Stop() {
-  LogInfo("Worker::Stop() called\n");
+  LogInfo("Worker::Stop() called");
   if (is_running_) {
     is_running_ = false;
     thread_->join();
   }
-  LogInfo("Worker::Stop() ok\n");
+  LogInfo("Worker::Stop() ok");
 }

@@ -24,7 +24,7 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavutil
 )
 #target_link_libraries (${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries (${PROJECT_NAME} pthread PkgConfig::LIBAV) 
+target_link_libraries (${PROJECT_NAME} pthread PkgConfig::LIBAV)
 
 install(TARGETS rtsp-publish
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

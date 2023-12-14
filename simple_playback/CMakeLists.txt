@@ -23,7 +23,7 @@ add_executable(simple_playback
     main.cpp
 )
 
-target_link_libraries (${PROJECT_NAME} pthread PkgConfig::LIBAV) 
+target_link_libraries (${PROJECT_NAME} pthread PkgConfig::LIBAV)
 target_link_libraries(${PROJECT_NAME}  ${SDL2_LIBRARIES})
 install(TARGETS simple_playback
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

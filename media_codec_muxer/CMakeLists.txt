@@ -4,10 +4,21 @@ project(media-codec-muxer LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_executable(${CMAKE_PROJECT_NAME}
   src/main.cpp
+  src/dlog.h
+  src/dlog.cpp
+  src/mediaworker.h
+  src/mediaworker.cpp
+  src/worker.h
+  src/worker.cpp
+  src/audiocapturer.h
+  src/audiocapturer.cpp
+  src/timesutil.h
 )
+
+target_link_libraries (${PROJECT_NAME} pthread)

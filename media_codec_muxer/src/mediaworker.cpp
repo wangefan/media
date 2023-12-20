@@ -27,21 +27,56 @@ bool MediaWorker::Init(const std::string &output_file_name) {
                 std::placeholders::_2, std::placeholders::_3));
 
   // Init AudioEncoder
+  audio_encoder_ = std::make_unique<aue::AudioEncoder>();
+  auto audio_input_format = std::make_shared<MediaFormat>(
+      MediaFormat::AudioFormat::RAW_FORMAT_PCM, kAudioCaptureSampleRate,
+      kAudioCaptureChannelCount);
+  auto audio_output_format = std::make_shared<MediaFormat>(
+      MediaFormat::ENC_FORMAT_AAC, kAudioCaptureSampleRate,
+      kAudioCaptureChannelCount);
+  audio_encoder_->Init(audio_input_format, audio_output_format);
+  audio_encoder_->AddCallback(std::bind(&MediaWorker::EncodedAudioCallback,
+                                        this, std::placeholders::_1));
 
-  // Todo: Turn on VideoEncoder
-  // Todo: Turn on AudioEncoder
-  // Todo: Turn on Mixer
-
+  // Init MediaMuxer
+  media_muxer_ = std::make_unique<mm::MediaMuxer>(mm::MediaMuxer::Format::MP4);
+  // Todo: video_track_index_ =
+  // mediaMuxer.addTrack(video_encoder_.GetOutputFormat());
+  audio_track_index_ =
+      media_muxer_->AddTrack(audio_encoder_->GetOutputFormat());
   return true;
 }
 
 bool MediaWorker::Start() {
-  // Todo: assert(video_capturer_->Start());
+  if (!media_muxer_->Start()) {
+    LogError("MediaWorker::Start(), media_muxer_->Start() failed");
+    return false;
+  }
+  
+  // Todo: video_encoder_->Start()
+  if (!audio_encoder_->Start()) {
+    LogError("MediaWorker::Start(), audio_encoder_->Start() failed");
+    return false;
+  }
+
+  // Todo: video_capturer_->Start();
   if (!audio_capturer_->Start()) {
     LogError("MediaWorker::Start(), audio_capturer_->Start() failed");
     return false;
   }
+
   return Worker::Start();
+}
+
+/*
+ * No need to stop VideoEncoder, AudioEncoder and MediaMuxer here since
+ * stopping capturer will fire the end state to the corresponding callback
+ * and then stop the encoder and muxer.
+ */
+void MediaWorker::Stop() {
+  // Todo: video_capturer_->Stop();
+  audio_capturer_->Stop();
+  Worker::Stop();
 }
 
 void MediaWorker::Work() {
@@ -65,17 +100,12 @@ void MediaWorker::Work() {
 // callback from AudioCapturer, callback one frame pcm data with
 // nb_samples * channels * byte_per_sample
 void MediaWorker::PcmCallback(uint8_t *pcm, int32_t size, int64_t time_stamp) {
-  LogInfo("MediaWorker::PcmCallback(..) called: size:%d, %ld", size, time_stamp);
-  /*int64_t pts = (int64_t)AVPublishTime::GetInstance()->get_audio_pts();
-  resampler_->convertToFlt(a_frame_, pcm, size);
-  RET_CODE encode_ret = audio_encoder_->Encode(a_frame_, a_packet_, pts);
-  if (encode_ret != RET_OK) {
-    LogError("PushWorker::PcmCallback, audio_encoder_->Encode failed");
-    return;
-  }
-  LogInfo(
-      "PushWorker::PcmCallback(..) audio_encoder_->Encode ok\n");
-  if (encode_ret == RET_OK) {
-    dumpToAACFile(a_packet_);
-  }*/
+  LogInfo("MediaWorker::PcmCallback(..) called: size:%d, %ld", size,
+          time_stamp);
+  audio_encoder_->QueueDataToEncode(pcm, size, time_stamp);
+}
+
+void MediaWorker::EncodedAudioCallback(AVPacket *audio_packet) {
+  LogInfo("MediaWorker::EncodedAudioCallback(..)");
+  media_muxer_->WriteSampleData(audio_track_index_, audio_packet);
 }

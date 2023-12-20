@@ -12,13 +12,23 @@ add_executable(${CMAKE_PROJECT_NAME}
   src/main.cpp
   src/dlog.h
   src/dlog.cpp
+  src/mediaformat.h
+  src/mediaformat.cpp
+  src/mediamuxer.h
+  src/mediamuxer.cpp
   src/mediaworker.h
   src/mediaworker.cpp
   src/worker.h
   src/worker.cpp
   src/audiocapturer.h
   src/audiocapturer.cpp
+  src/audioencoder.h
+  src/audioencoder.cpp
   src/timesutil.h
 )
-
-target_link_libraries (${PROJECT_NAME} pthread)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+    libavcodec
+    libavutil
+)
+target_link_libraries (${PROJECT_NAME} pthread PkgConfig::LIBAV)

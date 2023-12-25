@@ -6,39 +6,40 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#ifdef _MSC_VER	/* MSVC */
-//#define snprintf _snprintf
+#ifdef _MSC_VER /* MSVC */
+// #define snprintf _snprintf
 #define strcasecmp stricmp
 #define strncasecmp strnicmp
-//#define vsnprintf _vsnprintf
+// #define vsnprintf _vsnprintf
 #endif
 
-#define GetSockError()	WSAGetLastError()
-#define SetSockError(e)	WSASetLastError(e)
-#define setsockopt(a,b,c,d,e)	(setsockopt)(a,b,c,(const char *)d,(int)e)
-#define EWOULDBLOCK	WSAETIMEDOUT	/* we don't use nonblocking, but we do use timeouts */
-#define sleep(n)	Sleep(n*1000)
-#define msleep(n)	Sleep(n)
-#define SET_RCVTIMEO(tv,s)	int tv = s*1000
+#define GetSockError() WSAGetLastError()
+#define SetSockError(e) WSASetLastError(e)
+#define setsockopt(a, b, c, d, e) (setsockopt)(a, b, c, (const char *)d, (int)e)
+#define EWOULDBLOCK                                                            \
+  WSAETIMEDOUT /* we don't use nonblocking, but we do use timeouts */
+#define sleep(n) Sleep(n * 1000)
+#define msleep(n) Sleep(n)
+#define SET_RCVTIMEO(tv, s) int tv = s * 1000
 #else /* !_WIN32 */
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/times.h>
+#include <arpa/inet.h>
 #include <netdb.h>
-#include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <sys/times.h>
+#include <sys/types.h>
+#include <unistd.h>
 #define _BSD_SOURCE
-#define GetSockError()	errno
-#define SetSockError(e)	errno = e
+#define GetSockError() errno
+#define SetSockError(e) errno = e
 #undef closesocket
-#define closesocket(s)	close(s)
-#define msleep(n)	usleep(n*1000)
-#define SET_RCVTIMEO(tv,s)	struct timeval tv = {s,0}
+#define closesocket(s) close(s)
+#define msleep(n) usleep(n * 1000)
+#define SET_RCVTIMEO(tv, s) struct timeval tv = {s, 0}
 #endif
 
-#include<chrono>
+#include <chrono>
 using namespace std;
 using namespace std::chrono;
 
@@ -62,6 +63,9 @@ public:
     //        return
     //        duration_cast<chrono::milliseconds>(high_resolution_clock::now() -
     //        m_begin).count();
+  }
+  static inline int GetTimeBaseMillisecond() {
+    return 1000; // ms
   }
   // private:
   //    static time_point<high_resolution_clock> m_begin;

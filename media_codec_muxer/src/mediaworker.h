@@ -28,7 +28,7 @@ private:
   // Todo: std::unique_ptr<VideoCapturer> video_capturer_;
   std::unique_ptr<auc::AudioCapturer> audio_capturer_;
   // Todo: std::unique_ptr<VideoEncoder> video_encoder_;
-  std::unique_ptr<aue::AudioEncoder> audio_encoder_;
+  std::shared_ptr<aue::AudioEncoder> audio_encoder_;
   std::unique_ptr<mm::MediaMuxer> media_muxer_;
   int video_track_index_;
   int audio_track_index_;

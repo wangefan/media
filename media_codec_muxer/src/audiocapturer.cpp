@@ -69,6 +69,9 @@ void AudioCapturer::Work() {
   pcm_fp = nullptr;
   delete[] pcm_per_frame;
   pcm_per_frame = nullptr;
+  if (pcm_callback_ != nullptr) {
+    pcm_callback_(nullptr, -1, -1);
+  }
   LogInfo("AudioCapturer::Work() end");
 }
 

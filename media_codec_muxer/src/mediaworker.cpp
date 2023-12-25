@@ -31,10 +31,7 @@ bool MediaWorker::Init(const std::string &output_file_name) {
   auto audio_input_format = std::make_shared<MediaFormat>(
       MediaFormat::AudioFormat::RAW_FORMAT_PCM, kAudioCaptureSampleRate,
       kAudioCaptureChannelCount);
-  auto audio_output_format = std::make_shared<MediaFormat>(
-      MediaFormat::ENC_FORMAT_AAC, kAudioCaptureSampleRate,
-      kAudioCaptureChannelCount);
-  audio_encoder_->Init(audio_input_format, audio_output_format);
+  audio_encoder_->Init(audio_input_format);
   audio_encoder_->AddCallback(std::bind(&MediaWorker::EncodedAudioCallback,
                                         this, std::placeholders::_1));
 
@@ -42,8 +39,7 @@ bool MediaWorker::Init(const std::string &output_file_name) {
   media_muxer_ = std::make_unique<mm::MediaMuxer>(mm::MediaMuxer::Format::MP4);
   // Todo: video_track_index_ =
   // mediaMuxer.addTrack(video_encoder_.GetOutputFormat());
-  audio_track_index_ =
-      media_muxer_->AddTrack(audio_encoder_->GetOutputFormat());
+  audio_track_index_ = media_muxer_->AddTrack(audio_encoder_);
   return true;
 }
 
@@ -97,12 +93,22 @@ void MediaWorker::Work() {
   LogInfo("MediaWorker::Work() end");
 }
 
-// callback from AudioCapturer, callback one frame pcm data with
-// nb_samples * channels * byte_per_sample
+/*
+ * callback from AudioCapturer, callback one frame pcm data with
+ * nb_samples * channels * byte_per_sample.
+ * Pass pcm with null means capture ended, encoder should stop its
+ * process.
+ */
 void MediaWorker::PcmCallback(uint8_t *pcm, int32_t size, int64_t time_stamp) {
   LogInfo("MediaWorker::PcmCallback(..) called: size:%d, %ld", size,
           time_stamp);
-  audio_encoder_->QueueDataToEncode(pcm, size, time_stamp);
+  if (pcm != nullptr && size != -1 && time_stamp != -1) {
+    audio_encoder_->QueueDataToEncode(pcm, size, time_stamp);
+  } else {
+    LogInfo("MediaWorker::PcmCallback(..) called: will call "
+            "audio_encoder_->Stop()");
+    audio_encoder_->Stop();
+  }
 }
 
 void MediaWorker::EncodedAudioCallback(AVPacket *audio_packet) {

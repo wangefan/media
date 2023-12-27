@@ -3,8 +3,14 @@
 
 #include "encoder.h"
 #include <memory>
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
 
 struct AVPacket;
+struct AVFormatContext;
+struct AVStream;
+struct AVCodecContext;
 namespace mm {
 
 class MediaMuxer {
@@ -14,11 +20,20 @@ public:
     FLV,
     MKV,
   };
-  MediaMuxer(Format format);
-  virtual ~MediaMuxer() = default;
-  int AddTrack(std::weak_ptr<Encoder> format);
-  void WriteSampleData(int track_index, AVPacket *audio_packet);
+  MediaMuxer(Format format, const std::string &url);
+  virtual ~MediaMuxer();
+  int AddTrack(AVCodecContext *);
   bool Start();
+  void WriteSampleData(int track_index, AVPacket *audio_packet);
+  bool Stop();
+
+private:
+  AVFormatContext *fmt_ctx_ = nullptr;
+  AVRational video_codec_time_base_;
+  AVRational audio_codec_time_base_;
+  AVStream *video_stream_ = nullptr;
+  AVStream *audio_stream_ = nullptr;
+  std::string url_ = "";
 };
 
 } // namespace mm

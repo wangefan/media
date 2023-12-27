@@ -31,6 +31,8 @@ public:
     encoded_callback_ = encoded_callback;
   }
   // Todo: make it base function
+  AVCodecContext *GetCodecContext() override { return codec_ctx_; }
+  // Todo: make it base function
   bool Start() override;
   // Todo: make it base function
   void Work() override;

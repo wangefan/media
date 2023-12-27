@@ -13,8 +13,6 @@ MediaWorker::~MediaWorker() {}
 
 bool MediaWorker::Init(const std::string &output_file_name) {
   LogInfo("MediaWorker::Init() begin");
-  output_file_name_ = output_file_name;
-
   // Todo: Init VideoCapturer
   // Todo: Init VideoEncoder
 
@@ -36,10 +34,12 @@ bool MediaWorker::Init(const std::string &output_file_name) {
                                         this, std::placeholders::_1));
 
   // Init MediaMuxer
-  media_muxer_ = std::make_unique<mm::MediaMuxer>(mm::MediaMuxer::Format::MP4);
+  media_muxer_ = std::make_unique<mm::MediaMuxer>(mm::MediaMuxer::Format::MP4,
+                                                  output_file_name);
   // Todo: video_track_index_ =
   // mediaMuxer.addTrack(video_encoder_.GetOutputFormat());
-  audio_track_index_ = media_muxer_->AddTrack(audio_encoder_);
+  audio_track_index_ =
+      media_muxer_->AddTrack(audio_encoder_->GetCodecContext());
   return true;
 }
 
@@ -108,6 +108,7 @@ void MediaWorker::PcmCallback(uint8_t *pcm, int32_t size, int64_t time_stamp) {
     LogInfo("MediaWorker::PcmCallback(..) called: will call "
             "audio_encoder_->Stop()");
     audio_encoder_->Stop();
+    media_muxer_->Stop();
   }
 }
 

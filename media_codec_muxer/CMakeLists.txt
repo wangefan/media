@@ -30,6 +30,7 @@ add_executable(${CMAKE_PROJECT_NAME}
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavcodec
+    libavformat
     libavutil
 )
 target_link_libraries (${PROJECT_NAME} pthread PkgConfig::LIBAV)

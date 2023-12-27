@@ -3,10 +3,13 @@
 
 #include <stdint.h>
 
+struct AVCodecContext;
 class Encoder {
 public:
   Encoder() = default;
   virtual ~Encoder() = default;
+
+  virtual AVCodecContext *GetCodecContext() = 0;
 
   // Todo: make it base function
   virtual bool Start() = 0;

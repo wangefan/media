@@ -31,6 +31,7 @@ void AudioCapturer::Work() {
   auto pcm_per_frame_size = nb_samples * byte_per_sample * channel_count_;
   uint8_t *pcm_per_frame = new uint8_t[pcm_per_frame_size];
   auto frame_duration = 1.0 * nb_samples / sample_rate_ * 1000.0; // ms
+  int64_t pcm_record_start_time = TimesUtil::GetTimeMillisecond();
   int64_t pcm_frame_start_time = TimesUtil::GetTimeMillisecond();
   int64_t pcm_frame_dst_time = pcm_frame_start_time + frame_duration;
 
@@ -55,7 +56,8 @@ void AudioCapturer::Work() {
     int32_t size = fread(pcm_per_frame, 1, pcm_per_frame_size, pcm_fp);
     if (size > 0) {
       if (pcm_callback_ != nullptr) {
-        pcm_callback_(pcm_per_frame, size, pcm_frame_start_time);
+        pcm_callback_(pcm_per_frame, size,
+                      pcm_frame_start_time - pcm_record_start_time);
       }
       pcm_frame_start_time = pcm_frame_dst_time;
       pcm_frame_dst_time += frame_duration;

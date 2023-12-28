@@ -117,7 +117,7 @@ void AudioEncoder::consume_queue(
   while (!temp_raw_data_queue.empty()) {
     auto raw_data_buffer_info = std::move(temp_raw_data_queue.front());
     temp_raw_data_queue.pop();
-    LogInfo("AudioEncoder::consume_queue, cur raw_data_buffer_info.time_stamp: "
+    LogDebug("AudioEncoder::consume_queue, cur raw_data_buffer_info.time_stamp: "
             "%ld, av_frame_->nb_samples: %d",
             raw_data_buffer_info.time_stamp, av_frame_->nb_samples);
     // resample raw_data_buffer_info, sl0, sr0, sl1, sr1 => fl0, fl1, fr0, fr1
@@ -143,7 +143,7 @@ void AudioEncoder::consume_queue(
     std::vector<AVPacket *> packets;
     int ret = avcodec_send_frame(codec_ctx_, av_frame_);
     if (ret != 0) {
-      LogInfo("AudioEncoder::consume_queue, avcodec_send_frame failed!");
+      LogDebug("AudioEncoder::consume_queue, avcodec_send_frame failed!");
       continue;
     }
     while (true) {
@@ -152,7 +152,7 @@ void AudioEncoder::consume_queue(
       // New input data is required to return new output.
       if (ret == AVERROR(EAGAIN)) {
         av_packet_free(&packet);
-        LogInfo("AudioEncoder::consume_queue, avcodec_receive_packet need more "
+        LogDebug("AudioEncoder::consume_queue, avcodec_receive_packet need more "
                 "input to encode, continue to send frame..");
         break;
       }
@@ -161,7 +161,7 @@ void AudioEncoder::consume_queue(
       // AVERROR_EOF will be sent.
       if (ret == AVERROR_EOF) {
         av_packet_free(&packet);
-        LogInfo("AudioEncoder::consume_queue, the encoder is flushed without "
+        LogDebug("AudioEncoder::consume_queue, the encoder is flushed without "
                 "no extra output, leave the encoder process!");
         break;
       }
@@ -182,7 +182,7 @@ void AudioEncoder::Work() {
     {
       std::unique_lock<std::mutex> lock(raw_data_queue_mutex_);
       while (raw_data_queue_.empty() && is_consumer_running_) {
-        LogInfo("AudioEncoder::Work, has no raw data to encode, wait..");
+        LogDebug("AudioEncoder::Work, has no raw data to encode, wait..");
         raw_data_queue_cv_.wait(lock);
       }
       while (!raw_data_queue_.empty()) {
@@ -219,7 +219,7 @@ bool AudioEncoder::Stop() {
 
 bool AudioEncoder::QueueDataToEncode(uint8_t *pcm, int32_t size,
                                      int64_t time_stamp) {
-  LogInfo("AudioEncoder::QueueDataToEncode called");
+  LogDebug("AudioEncoder::QueueDataToEncode called");
   {
     std::lock_guard<std::mutex> lock(raw_data_queue_mutex_);
     if (!is_consumer_running_) {

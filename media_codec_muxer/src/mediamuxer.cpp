@@ -78,7 +78,7 @@ void MediaMuxer::WriteSampleData(int track_index, AVPacket *packet) {
   packet->stream_index = track_index;
 
   if (!packet || packet->size <= 0 || !packet->data) {
-    LogInfo("MediaMuxer::WriteSampleData, packet is invalid");
+    LogDebug("MediaMuxer::WriteSampleData, packet is invalid");
     if (packet)
       av_packet_free(&packet);
   }
@@ -104,7 +104,7 @@ void MediaMuxer::WriteSampleData(int track_index, AVPacket *packet) {
       packet); // 不是立即写入文件，内部缓存，主要是对pts进行排序
   //    ret = av_write_frame(fmt_ctx_, packet);
   if (ret != 0) {
-    LogInfo("MediaMuxer::WriteSampleData, av_write_frame failed:");
+    LogDebug("MediaMuxer::WriteSampleData, av_write_frame failed:");
   }
 }
 

@@ -100,7 +100,7 @@ void MediaWorker::Work() {
  * process.
  */
 void MediaWorker::PcmCallback(uint8_t *pcm, int32_t size, int64_t time_stamp) {
-  LogInfo("MediaWorker::PcmCallback(..) called: size:%d, %ld", size,
+  LogDebug("MediaWorker::PcmCallback(..) called: size:%d, %ld", size,
           time_stamp);
   if (pcm != nullptr && size != -1 && time_stamp != -1) {
     audio_encoder_->QueueDataToEncode(pcm, size, time_stamp);
@@ -113,6 +113,6 @@ void MediaWorker::PcmCallback(uint8_t *pcm, int32_t size, int64_t time_stamp) {
 }
 
 void MediaWorker::EncodedAudioCallback(AVPacket *audio_packet) {
-  LogInfo("MediaWorker::EncodedAudioCallback(..)");
+  LogDebug("MediaWorker::EncodedAudioCallback(..)");
   media_muxer_->WriteSampleData(audio_track_index_, audio_packet);
 }

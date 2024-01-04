@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 struct AVCodecContext;
+struct RawDataBufferInfo;
 class Encoder {
 public:
   Encoder() = default;
@@ -18,8 +19,7 @@ public:
   // Todo: make it base function
   virtual bool Stop() = 0;
   // Todo: make it base function
-  virtual bool QueueDataToEncode(uint8_t *pcm, int32_t size,
-                                 int64_t time_stamp) = 0;
+  virtual bool QueueDataToEncode(RawDataBufferInfo &raw_data_buffer_info) = 0;
 };
 
 #endif // ENCODER_H_

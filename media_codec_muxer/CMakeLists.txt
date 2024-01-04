@@ -20,6 +20,8 @@ add_executable(${CMAKE_PROJECT_NAME}
   src/mediaworker.cpp
   src/worker.h
   src/worker.cpp
+  src/rawdatabufferinfo.h
+  src/encodeddatabufferinfo.h
   src/audiocapturer.h
   src/audiocapturer.cpp
   src/encoder.h

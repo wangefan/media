@@ -117,43 +117,55 @@ void AudioEncoder::consume_queue(
   while (!temp_raw_data_queue.empty()) {
     auto raw_data_buffer_info = std::move(temp_raw_data_queue.front());
     temp_raw_data_queue.pop();
-    LogDebug("AudioEncoder::consume_queue, cur raw_data_buffer_info.time_stamp: "
-            "%ld, av_frame_->nb_samples: %d",
-            raw_data_buffer_info.time_stamp, av_frame_->nb_samples);
-    // resample raw_data_buffer_info, sl0, sr0, sl1, sr1 => fl0, fl1, fr0, fr1
-    short *pcm_short = (short *)raw_data_buffer_info.raw_data.get();
-    float *resample_fltp_buf_float = (float *)resample_fltp_buf_;
-    float *fltp_l = resample_fltp_buf_float; // -1~1
-    float *fltp_r = resample_fltp_buf_float + av_frame_->nb_samples;
-    for (int idx = 0; idx < av_frame_->nb_samples; idx++) {
-      fltp_l[idx] = pcm_short[idx * 2] / 32768.0f;
-      fltp_r[idx] = pcm_short[idx * 2 + 1] / 32768.0f;
-    }
-    av_frame_make_writable(av_frame_);
-    av_samples_fill_arrays(av_frame_->data, av_frame_->linesize,
-                           resample_fltp_buf_, av_frame_->channels,
-                           av_frame_->nb_samples,
-                           (AVSampleFormat)av_frame_->format, 0);
 
-    // encode raw_data_buffer_info
-    av_frame_->pts =
-        av_rescale_q(raw_data_buffer_info.time_stamp,
-                     AVRational{1, TimesUtil::GetTimeBaseMillisecond()},
-                     codec_ctx_->time_base);
-    std::vector<AVPacket *> packets;
-    int ret = avcodec_send_frame(codec_ctx_, av_frame_);
+    int ret = 0;
+    if (raw_data_buffer_info.raw_data.get() == nullptr) {
+      LogDebug("AudioEncoder::consume_queue, raw_data_buffer_info is nullptr, "
+               "flush the encoder");
+      ret = avcodec_send_frame(codec_ctx_, nullptr);
+    } else {
+      LogDebug(
+          "AudioEncoder::consume_queue, cur raw_data_buffer_info.time_stamp: "
+          "%ld, av_frame_->nb_samples: %d",
+          raw_data_buffer_info.time_stamp, av_frame_->nb_samples);
+      // resample raw_data_buffer_info, sl0, sr0, sl1, sr1 => fl0, fl1, fr0, fr1
+      short *pcm_short = (short *)raw_data_buffer_info.raw_data.get();
+      float *resample_fltp_buf_float = (float *)resample_fltp_buf_;
+      float *fltp_l = resample_fltp_buf_float; // -1~1
+      float *fltp_r = resample_fltp_buf_float + av_frame_->nb_samples;
+      for (int idx = 0; idx < av_frame_->nb_samples; idx++) {
+        fltp_l[idx] = pcm_short[idx * 2] / 32768.0f;
+        fltp_r[idx] = pcm_short[idx * 2 + 1] / 32768.0f;
+      }
+      av_frame_make_writable(av_frame_);
+      av_samples_fill_arrays(av_frame_->data, av_frame_->linesize,
+                             resample_fltp_buf_, av_frame_->channels,
+                             av_frame_->nb_samples,
+                             (AVSampleFormat)av_frame_->format, 0);
+      // encode raw_data_buffer_info
+      av_frame_->pts =
+          av_rescale_q(raw_data_buffer_info.time_stamp,
+                       AVRational{1, TimesUtil::GetTimeBaseMillisecond()},
+                       codec_ctx_->time_base);
+      ret = avcodec_send_frame(codec_ctx_, av_frame_);
+    }
+
     if (ret != 0) {
       LogDebug("AudioEncoder::consume_queue, avcodec_send_frame failed!");
       continue;
     }
+
+    // receive encoded data
+    std::vector<AVPacket *> packets;
     while (true) {
       AVPacket *packet = av_packet_alloc();
       ret = avcodec_receive_packet(codec_ctx_, packet);
       // New input data is required to return new output.
       if (ret == AVERROR(EAGAIN)) {
         av_packet_free(&packet);
-        LogDebug("AudioEncoder::consume_queue, avcodec_receive_packet need more "
-                "input to encode, continue to send frame..");
+        LogDebug(
+            "AudioEncoder::consume_queue, avcodec_receive_packet need more "
+            "input to encode, continue to send frame..");
         break;
       }
       // When in draining mode(send NULL to the avcodec_send_packet() (decoding)
@@ -162,13 +174,15 @@ void AudioEncoder::consume_queue(
       if (ret == AVERROR_EOF) {
         av_packet_free(&packet);
         LogDebug("AudioEncoder::consume_queue, the encoder is flushed without "
-                "no extra output, leave the encoder process!");
+                 "no extra output, leave the encoder process!");
         break;
       }
       packets.push_back(packet);
     }
-    for(auto* packet: packets) {
-      encoded_callback_(packet);
+    for (auto *packet : packets) {
+      EncodedDataBufferInfo encoded_data_buffer_info{
+          EncodedDataState::STATE_SENDING, packet};
+      encoded_callback_(encoded_data_buffer_info);
       av_packet_free(&packet);
     }
     packets.clear();
@@ -177,6 +191,9 @@ void AudioEncoder::consume_queue(
 
 void AudioEncoder::Work() {
   LogInfo("AudioEncoder::Work begins");
+  EncodedDataBufferInfo encoded_data_buffer_info_begin{
+      EncodedDataState::STATE_BEGIN, nullptr};
+  encoded_callback_(encoded_data_buffer_info_begin);
   while (true) {
     std::queue<RawDataBufferInfo> temp_raw_data_queue;
     {
@@ -194,10 +211,18 @@ void AudioEncoder::Work() {
     consume_queue(temp_raw_data_queue);
 
     if (!is_consumer_running_) {
-      LogInfo("AudioEncoder::Work, is_consumer_running_ == false, break!");
+      LogInfo("AudioEncoder::Work, is_consumer_running_ == false, to flush "
+              "encoded data and break!");
+      std::queue<RawDataBufferInfo> temp_raw_data_queue_to_flush;
+      temp_raw_data_queue_to_flush.push(
+          {RawDataState::RAW_DATA_STATE_SENDING, nullptr, -1, -1});
+      consume_queue(temp_raw_data_queue_to_flush);
       break;
     }
   }
+  EncodedDataBufferInfo encoded_data_buffer_info_end{
+      EncodedDataState::STATE_END, nullptr};
+  encoded_callback_(encoded_data_buffer_info_end);
   LogInfo("AudioEncoder::Work end");
 }
 
@@ -217,17 +242,14 @@ bool AudioEncoder::Stop() {
   return true;
 }
 
-bool AudioEncoder::QueueDataToEncode(uint8_t *pcm, int32_t size,
-                                     int64_t time_stamp) {
+bool AudioEncoder::QueueDataToEncode(RawDataBufferInfo &raw_data_buffer_info) {
   LogDebug("AudioEncoder::QueueDataToEncode called");
   {
     std::lock_guard<std::mutex> lock(raw_data_queue_mutex_);
     if (!is_consumer_running_) {
       return false;
     }
-    auto raw_data = std::make_unique<uint8_t[]>(size);
-    std::copy(pcm, pcm + size, raw_data.get());
-    raw_data_queue_.push({std::move(raw_data), size, time_stamp});
+    raw_data_queue_.push(std::move(raw_data_buffer_info));
   }
   raw_data_queue_cv_.notify_one();
   return true;

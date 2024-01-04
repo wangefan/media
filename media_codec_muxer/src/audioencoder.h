@@ -8,26 +8,24 @@
 #include <functional>
 #include <memory>
 #include <queue>
+#include "rawdatabufferinfo.h"
+#include "encodeddatabufferinfo.h"
 
-class AVPacket;
 class AVFrame;
 class AVCodec;
 class AVCodecContext;
 
 namespace aue {
 
-struct RawDataBufferInfo {
-  std::unique_ptr<uint8_t[]> raw_data;
-  int32_t size;
-  int64_t time_stamp;
-};
+
 class AudioEncoder : public Encoder {
 public:
   AudioEncoder();
   virtual ~AudioEncoder();
 
   bool Init(std::shared_ptr<MediaFormat> input_format);
-  void AddCallback(std::function<void(AVPacket *packet)> encoded_callback) {
+  void
+  AddCallback(std::function<void(EncodedDataBufferInfo &)> encoded_callback) {
     encoded_callback_ = encoded_callback;
   }
   // Todo: make it base function
@@ -39,8 +37,7 @@ public:
   // Todo: make it base function
   bool Stop() override;
   // Todo: make it base function
-  bool QueueDataToEncode(uint8_t *pcm, int32_t size,
-                         int64_t time_stamp) override;
+  bool QueueDataToEncode(RawDataBufferInfo &raw_data_buffer_info) override;
 
   std::shared_ptr<MediaFormat> GetInputFormat() { return input_format_; }
 
@@ -52,7 +49,8 @@ private:
   uint8_t *resample_fltp_buf_;
   AVFrame *av_frame_;
   AVPacket *av_packet_;
-  std::function<void(AVPacket *packet)> encoded_callback_;
+  std::function<void(EncodedDataBufferInfo &encoded_data_buffer_info)>
+      encoded_callback_;
   std::shared_ptr<MediaFormat> input_format_;
 
   bool is_consumer_running_;

@@ -17,10 +17,15 @@ bool AudioCapturer::Init(uint32_t sample_rate, uint32_t channel_count,
 void AudioCapturer::Work() {
   LogInfo("AudioCapturer::Work() begin");
 
-  const std::string input_pcm_name = "./media_files/count.pcm";
+  const std::string input_pcm_name = "./media_files/count_s.pcm";
   FILE *pcm_fp = fopen(input_pcm_name.c_str(), "rb");
   if (pcm_fp == nullptr) {
     LogInfo("AudioCapturer::Work(), open file error, end");
+    if (pcm_callback_ != nullptr) {
+      RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_ERROR,
+                                             nullptr, -1, -1};
+      pcm_callback_(raw_data_buffer_info);
+    }
     return;
   }
 
@@ -34,6 +39,11 @@ void AudioCapturer::Work() {
   int64_t pcm_record_start_time = TimesUtil::GetTimeMillisecond();
   int64_t pcm_frame_start_time = TimesUtil::GetTimeMillisecond();
   int64_t pcm_frame_dst_time = pcm_frame_start_time + frame_duration;
+  if (pcm_callback_ != nullptr) {
+    RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_BEGIN,
+                                           nullptr, -1, -1};
+    pcm_callback_(raw_data_buffer_info);
+  }
 
   while (true) {
     {
@@ -56,8 +66,12 @@ void AudioCapturer::Work() {
     int32_t size = fread(pcm_per_frame, 1, pcm_per_frame_size, pcm_fp);
     if (size > 0) {
       if (pcm_callback_ != nullptr) {
-        pcm_callback_(pcm_per_frame, size,
-                      pcm_frame_start_time - pcm_record_start_time);
+        auto raw_data = std::make_unique<uint8_t[]>(size);
+        std::copy(pcm_per_frame, pcm_per_frame + size, raw_data.get());
+        RawDataBufferInfo raw_data_buffer_info{
+            RawDataState::RAW_DATA_STATE_SENDING, std::move(raw_data), size,
+            pcm_frame_start_time - pcm_record_start_time};
+        pcm_callback_(raw_data_buffer_info);
       }
       pcm_frame_start_time = pcm_frame_dst_time;
       pcm_frame_dst_time += frame_duration;
@@ -72,7 +86,9 @@ void AudioCapturer::Work() {
   delete[] pcm_per_frame;
   pcm_per_frame = nullptr;
   if (pcm_callback_ != nullptr) {
-    pcm_callback_(nullptr, -1, -1);
+    RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_END,
+                                           nullptr, -1, -1};
+    pcm_callback_(raw_data_buffer_info);
   }
   LogInfo("AudioCapturer::Work() end");
 }

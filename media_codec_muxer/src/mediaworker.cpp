@@ -21,8 +21,7 @@ bool MediaWorker::Init(const std::string &output_file_name) {
   audio_capturer_->Init(kAudioCaptureSampleRate, kAudioCaptureChannelCount,
                         kAudioCaptureSampleFormat);
   audio_capturer_->AddCallback(
-      std::bind(&MediaWorker::PcmCallback, this, std::placeholders::_1,
-                std::placeholders::_2, std::placeholders::_3));
+      std::bind(&MediaWorker::PcmCallback, this, std::placeholders::_1));
 
   // Init AudioEncoder
   audio_encoder_ = std::make_unique<aue::AudioEncoder>();
@@ -44,17 +43,6 @@ bool MediaWorker::Init(const std::string &output_file_name) {
 }
 
 bool MediaWorker::Start() {
-  if (!media_muxer_->Start()) {
-    LogError("MediaWorker::Start(), media_muxer_->Start() failed");
-    return false;
-  }
-  
-  // Todo: video_encoder_->Start()
-  if (!audio_encoder_->Start()) {
-    LogError("MediaWorker::Start(), audio_encoder_->Start() failed");
-    return false;
-  }
-
   // Todo: video_capturer_->Start();
   if (!audio_capturer_->Start()) {
     LogError("MediaWorker::Start(), audio_capturer_->Start() failed");
@@ -99,20 +87,50 @@ void MediaWorker::Work() {
  * Pass pcm with null means capture ended, encoder should stop its
  * process.
  */
-void MediaWorker::PcmCallback(uint8_t *pcm, int32_t size, int64_t time_stamp) {
-  LogDebug("MediaWorker::PcmCallback(..) called: size:%d, %ld", size,
-          time_stamp);
-  if (pcm != nullptr && size != -1 && time_stamp != -1) {
-    audio_encoder_->QueueDataToEncode(pcm, size, time_stamp);
-  } else {
+void MediaWorker::PcmCallback(RawDataBufferInfo &raw_data_buffer_info) {
+  if (raw_data_buffer_info.state == RawDataState::RAW_DATA_STATE_BEGIN) {
+    LogDebug("MediaWorker::PcmCallback(..) called: begin to capture audio..");
+    if (!audio_encoder_->Start()) {
+      LogError("MediaWorker::PcmCallback(), audio_encoder_->Start() failed");
+    }
+  } else if (raw_data_buffer_info.state ==
+             RawDataState::RAW_DATA_STATE_SENDING) {
+    LogDebug("MediaWorker::PcmCallback(..) called: size:%d, %ld",
+             raw_data_buffer_info.size, raw_data_buffer_info.time_stamp);
+    audio_encoder_->QueueDataToEncode(raw_data_buffer_info);
+  } else if (raw_data_buffer_info.state == RawDataState::RAW_DATA_STATE_END) {
     LogInfo("MediaWorker::PcmCallback(..) called: will call "
             "audio_encoder_->Stop()");
     audio_encoder_->Stop();
-    media_muxer_->Stop();
+  } else if (raw_data_buffer_info.state == RawDataState::RAW_DATA_STATE_ERROR) {
+    // Todo: send message to let mediaworker stop
+    LogInfo("MediaWorker::PcmCallback(..) called: send message to let "
+            "mediaworker stop");
   }
 }
 
-void MediaWorker::EncodedAudioCallback(AVPacket *audio_packet) {
+void MediaWorker::EncodedAudioCallback(
+    EncodedDataBufferInfo &encoded_data_buffer_info) {
   LogDebug("MediaWorker::EncodedAudioCallback(..)");
-  media_muxer_->WriteSampleData(audio_track_index_, audio_packet);
+  if (encoded_data_buffer_info.state == EncodedDataState::STATE_BEGIN) {
+    LogDebug("MediaWorker::EncodedAudioCallback(..) called: begin to encode "
+             "audio..");
+    if (!media_muxer_->Start()) {
+      LogError(
+          "MediaWorker::EncodedAudioCallback(), media_muxer_->Start() failed");
+    }
+  } else if (encoded_data_buffer_info.state ==
+             EncodedDataState::STATE_SENDING) {
+    LogDebug("MediaWorker::EncodedAudioCallback(..) called: write encoded "
+             "audio data to muxer..");
+    media_muxer_->WriteSampleData(audio_track_index_,
+                                  encoded_data_buffer_info.packet);
+  } else if (encoded_data_buffer_info.state == EncodedDataState::STATE_END) {
+    LogInfo("MediaWorker::EncodedAudioCallback(..) called: will call "
+            "media_muxer_->Stop()");
+    media_muxer_->Stop();
+  } /*else if (encoded_data_buffer_info.state == EncodedDataState::STATE_ERROR)
+  {
+    // Todo: error handling
+  }*/
 }

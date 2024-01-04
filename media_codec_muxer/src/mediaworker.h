@@ -20,8 +20,8 @@ public:
 private:
   // callback from AudioCapturer, callback one frame pcm data with
   // nb_samples * channels * byte_per_sample
-  void PcmCallback(uint8_t *pcm, int32_t size, int64_t time_stamp);
-  void EncodedAudioCallback(AVPacket *audio_packet);
+  void PcmCallback(RawDataBufferInfo &raw_data_buffer_info);
+  void EncodedAudioCallback(EncodedDataBufferInfo &encoded_data_buffer_info);
 
 private:
   // Todo: std::unique_ptr<VideoCapturer> video_capturer_;

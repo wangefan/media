@@ -24,7 +24,7 @@ bool MediaWorker::Init(const std::string &output_file_name) {
       std::bind(&MediaWorker::PcmCallback, this, std::placeholders::_1));
 
   // Init AudioEncoder
-  audio_encoder_ = std::make_unique<aue::AudioEncoder>();
+  audio_encoder_ = std::make_unique<AudioEncoder>();
   auto audio_input_format = std::make_shared<MediaFormat>(
       MediaFormat::AudioFormat::RAW_FORMAT_PCM, kAudioCaptureSampleRate,
       kAudioCaptureChannelCount);

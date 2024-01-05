@@ -25,6 +25,7 @@ add_executable(${CMAKE_PROJECT_NAME}
   src/audiocapturer.h
   src/audiocapturer.cpp
   src/encoder.h
+  src/encoder.cpp
   src/audioencoder.h
   src/audioencoder.cpp
   src/timesutil.h

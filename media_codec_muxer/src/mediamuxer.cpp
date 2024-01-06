@@ -7,8 +7,6 @@ extern "C"
 #include <libavformat/avformat.h>
 }
 
-namespace mm {
-
 MediaMuxer::MediaMuxer(Format format, const std::string &url) {
   int ret = avformat_alloc_output_context2(&fmt_ctx_, NULL, NULL, url.c_str());
   if (ret < 0) {
@@ -16,6 +14,7 @@ MediaMuxer::MediaMuxer(Format format, const std::string &url) {
   }
 
   url_ = url;
+  started_ = false;
 }
 
 MediaMuxer::~MediaMuxer() {
@@ -23,6 +22,7 @@ MediaMuxer::~MediaMuxer() {
     avformat_close_input(&fmt_ctx_);
   }
   url_ = "";
+  started_ = false;
 }
 
 int MediaMuxer::AddTrack(AVCodecContext *codec_ctx) {
@@ -60,6 +60,8 @@ int MediaMuxer::AddTrack(AVCodecContext *codec_ctx) {
 }
 
 bool MediaMuxer::Start() {
+  if (started_)
+    return false;
   LogInfo("MediaMuxer::Start, url_:%s", url_.c_str());
   int ret = avio_open(&fmt_ctx_->pb, url_.c_str(), AVIO_FLAG_WRITE);
   if (ret < 0) {
@@ -71,16 +73,19 @@ bool MediaMuxer::Start() {
     LogInfo("MediaMuxer::Start, avformat_write_header failed!");
     return false;
   }
+  started_ = true;
   return true;
 }
 
 void MediaMuxer::WriteSampleData(int track_index, AVPacket *packet) {
+  std::lock_guard<std::mutex> lock(write_data_mutex_);
+  if (!started_)
+    return;
   packet->stream_index = track_index;
 
   if (!packet || packet->size <= 0 || !packet->data) {
     LogDebug("MediaMuxer::WriteSampleData, packet is invalid");
-    if (packet)
-      av_packet_free(&packet);
+    return;
   }
 
   AVRational src_time_base; // time_base from encoded packet
@@ -109,13 +114,13 @@ void MediaMuxer::WriteSampleData(int track_index, AVPacket *packet) {
 }
 
 bool MediaMuxer::Stop() {
+  if (!started_)
+    return false;
   int ret = av_write_trailer(fmt_ctx_);
   if (ret != 0) {
     LogInfo("MediaMuxer::Stop, av_write_trailer failed:");
     return false;
   }
-
+  started_ = false;
   return true;
 }
-
-} // namespace mm

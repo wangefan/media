@@ -33,8 +33,8 @@ bool MediaWorker::Init(const std::string &output_file_name) {
                                         this, std::placeholders::_1));
 
   // Init MediaMuxer
-  media_muxer_ = std::make_unique<mm::MediaMuxer>(mm::MediaMuxer::Format::MP4,
-                                                  output_file_name);
+  media_muxer_ =
+      std::make_unique<MediaMuxer>(MediaMuxer::Format::MP4, output_file_name);
   // Todo: video_track_index_ =
   // mediaMuxer.addTrack(video_encoder_.GetOutputFormat());
   audio_track_index_ =
@@ -43,6 +43,11 @@ bool MediaWorker::Init(const std::string &output_file_name) {
 }
 
 bool MediaWorker::Start() {
+  if (!media_muxer_->Start()) {
+    LogError("MediaWorker::Start() called, media_muxer_->Start() "
+             "failed");
+    return false;
+  }
   // Todo: video_capturer_->Start();
   if (!audio_capturer_->Start()) {
     LogError("MediaWorker::Start(), audio_capturer_->Start() failed");
@@ -58,6 +63,7 @@ bool MediaWorker::Start() {
  * and then stop the encoder and muxer.
  */
 void MediaWorker::Stop() {
+  media_muxer_->Stop();
   // Todo: video_capturer_->Stop();
   audio_capturer_->Stop();
   Worker::Stop();
@@ -113,12 +119,8 @@ void MediaWorker::EncodedAudioCallback(
     EncodedDataBufferInfo &encoded_data_buffer_info) {
   LogDebug("MediaWorker::EncodedAudioCallback(..)");
   if (encoded_data_buffer_info.state == EncodedDataState::STATE_BEGIN) {
-    LogDebug("MediaWorker::EncodedAudioCallback(..) called: begin to encode "
-             "audio..");
-    if (!media_muxer_->Start()) {
-      LogError(
-          "MediaWorker::EncodedAudioCallback(), media_muxer_->Start() failed");
-    }
+    LogInfo("MediaWorker::EncodedAudioCallback(..) called with "
+            "EncodedDataState::STATE_BEGIN");
   } else if (encoded_data_buffer_info.state ==
              EncodedDataState::STATE_SENDING) {
     LogDebug("MediaWorker::EncodedAudioCallback(..) called: write encoded "
@@ -126,9 +128,8 @@ void MediaWorker::EncodedAudioCallback(
     media_muxer_->WriteSampleData(audio_track_index_,
                                   encoded_data_buffer_info.packet);
   } else if (encoded_data_buffer_info.state == EncodedDataState::STATE_END) {
-    LogInfo("MediaWorker::EncodedAudioCallback(..) called: will call "
-            "media_muxer_->Stop()");
-    media_muxer_->Stop();
+    LogInfo("MediaWorker::EncodedAudioCallback(..) called with "
+            "EncodedDataState::STATE_END");
   } /*else if (encoded_data_buffer_info.state == EncodedDataState::STATE_ERROR)
   {
     // Todo: error handling

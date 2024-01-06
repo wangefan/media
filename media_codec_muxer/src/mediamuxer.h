@@ -11,8 +11,6 @@ struct AVPacket;
 struct AVFormatContext;
 struct AVStream;
 struct AVCodecContext;
-namespace mm {
-
 class MediaMuxer {
 public:
   enum Format {
@@ -34,7 +32,8 @@ private:
   AVStream *video_stream_ = nullptr;
   AVStream *audio_stream_ = nullptr;
   std::string url_ = "";
+  bool started_ = false;
+  std::mutex write_data_mutex_;
 };
 
-} // namespace mm
 #endif // MEDIAMUXER_H_

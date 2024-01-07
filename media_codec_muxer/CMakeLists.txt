@@ -22,12 +22,16 @@ add_executable(${CMAKE_PROJECT_NAME}
   src/worker.cpp
   src/rawdatabufferinfo.h
   src/encodeddatabufferinfo.h
+  src/videocapturer.h
+  src/videocapturer.cpp
   src/audiocapturer.h
   src/audiocapturer.cpp
   src/encoder.h
   src/encoder.cpp
   src/audioencoder.h
   src/audioencoder.cpp
+  src/videoencoder.h
+  src/videoencoder.cpp
   src/timesutil.h
 )
 find_package(PkgConfig REQUIRED)

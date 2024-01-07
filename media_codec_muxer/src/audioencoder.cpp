@@ -17,7 +17,7 @@ AudioEncoder::~AudioEncoder() {
 bool AudioEncoder::Init(std::shared_ptr<MediaFormat> input_format) {
   input_format_ = input_format;
 
-  if (input_format_->GetFormat() != MediaFormat::AudioFormat::RAW_FORMAT_PCM) {
+  if (input_format_->GetFormat() != MediaFormat::Format::RAW_AUDIO_PCM) {
     LogInfo(
         "AudioEncoder::Init, given unsupported audio input or output format ");
     return false;

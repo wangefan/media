@@ -84,7 +84,7 @@ void VideoEncoder::consume_queue(
       // encode raw_data_buffer_info
       av_frame_->pts =
           av_rescale_q(raw_data_buffer_info.time_stamp,
-                       AVRational{1, TimesUtil::GetTimeBaseMillisecond()},
+                       AVRational{1, TimesUtil::GetTimeBaseMicroSeconds()},
                        codec_ctx_->time_base);
       ret = avcodec_send_frame(codec_ctx_, av_frame_);
     }

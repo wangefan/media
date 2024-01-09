@@ -50,7 +50,7 @@ using namespace std::chrono;
 
 class TimesUtil {
 public:
-  static inline int64_t GetTimeMillisecond() {
+  static inline int64_t GetTimeMicroSeconds() {
 #ifdef _WIN32
     return (int64_t)GetTickCount();
 #else

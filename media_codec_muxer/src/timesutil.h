@@ -51,21 +51,22 @@ using namespace std::chrono;
 
 class TimesUtil {
 public:
-  static inline int64_t GetTimeMillisecond() {
+  static inline int64_t GetTimeMicroSeconds() {
 #ifdef _WIN32
     return (int64_t)GetTickCount();
 #else
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    return ((int64_t)tv.tv_sec * 1000 + (unsigned long long)tv.tv_usec / 1000);
+    return ((int64_t)tv.tv_sec * TimesUtil::GetTimeBaseMicroSeconds() +
+            (unsigned long long)tv.tv_usec);
 #endif
 
     //        return
     //        duration_cast<chrono::milliseconds>(high_resolution_clock::now() -
     //        m_begin).count();
   }
-  static inline int GetTimeBaseMillisecond() {
-    return 1000; // ms
+  static inline int64_t GetTimeBaseMicroSeconds() {
+    return 1000000; // ms
   }
   // private:
   //    static time_point<high_resolution_clock> m_begin;

@@ -35,9 +35,10 @@ void AudioCapturer::Work() {
       2; // Todo: To see if sample_format_ is PCM16Bit.
   auto pcm_per_frame_size = nb_samples * byte_per_sample * channel_count_;
   uint8_t *pcm_per_frame = new uint8_t[pcm_per_frame_size];
-  auto frame_duration = 1.0 * nb_samples / sample_rate_ * 1000.0; // ms
-  int64_t pcm_record_start_time = TimesUtil::GetTimeMillisecond();
-  int64_t pcm_frame_start_time = TimesUtil::GetTimeMillisecond();
+  auto frame_duration = 1.0 * nb_samples / sample_rate_ *
+                        (double)(TimesUtil::GetTimeBaseMicroSeconds()); // us
+  int64_t pcm_record_start_time = TimesUtil::GetTimeMicroSeconds();
+  int64_t pcm_frame_start_time = TimesUtil::GetTimeMicroSeconds();
   int64_t pcm_frame_dst_time = pcm_frame_start_time + frame_duration;
   if (pcm_callback_ != nullptr) {
     RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_BEGIN,
@@ -57,7 +58,7 @@ void AudioCapturer::Work() {
       fseek(pcm_fp, 0, SEEK_SET);
       reset_to_head = false;
     }
-    auto current_time = TimesUtil::GetTimeMillisecond();
+    auto current_time = TimesUtil::GetTimeMicroSeconds();
     if (current_time < pcm_frame_dst_time) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;

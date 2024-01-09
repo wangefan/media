@@ -29,11 +29,11 @@ void AudioCapturer::Work() {
     //LogInfo("AudioCapturer::Work() is running..\n");
     if(reset_to_head) {
       fseek(pcm_fp_, 0, SEEK_SET);
-      pcm_start_time_ = TimesUtil::GetTimeMillisecond(); // begin time
+      pcm_start_time_ = TimesUtil::GetTimeMicroSeconds(); // begin time
       pcm_dst_time_ = pcm_start_time_ + frame_duration_; // dest time
       reset_to_head = false;
     }
-    auto current_time = TimesUtil::GetTimeMillisecond();
+    auto current_time = TimesUtil::GetTimeMicroSeconds();
     if (current_time < pcm_dst_time_) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;

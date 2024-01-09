@@ -34,9 +34,10 @@ void VideoCapturer::Work() {
   const auto yuv_frame_size = y_frame_size + u_frame_size + v_frame_size;
   uint8_t *yuv_frame_buf = new uint8_t[yuv_frame_size];
 
-  auto frame_duration = 1.0 / video_fps_ * 1000.0; // ms
-  int64_t yuv_record_start_time = TimesUtil::GetTimeMillisecond();
-  int64_t yuv_frame_start_time = TimesUtil::GetTimeMillisecond();
+  auto frame_duration =
+      1.0 / video_fps_ * (double)(TimesUtil::GetTimeBaseMicroSeconds()); // us
+  int64_t yuv_record_start_time = TimesUtil::GetTimeMicroSeconds();
+  int64_t yuv_frame_start_time = TimesUtil::GetTimeMicroSeconds();
   int64_t yuv_frame_dst_time = yuv_frame_start_time + frame_duration;
   if (yuv_callback_ != nullptr) {
     RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_BEGIN,
@@ -56,7 +57,7 @@ void VideoCapturer::Work() {
       fseek(yvu_fp, 0, SEEK_SET);
       reset_to_head = false;
     }
-    auto current_time = TimesUtil::GetTimeMillisecond();
+    auto current_time = TimesUtil::GetTimeMicroSeconds();
     if (current_time < yuv_frame_dst_time) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;

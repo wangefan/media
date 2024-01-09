@@ -1,7 +1,6 @@
 #include "audiocapturer.h"
 #include "dlog.h"
 #include "timesutil.h"
-namespace auc {
 
 AudioCapturer::~AudioCapturer() {}
 
@@ -93,5 +92,3 @@ void AudioCapturer::Work() {
   }
   LogInfo("AudioCapturer::Work() end");
 }
-
-} // namespace auc

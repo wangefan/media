@@ -4,8 +4,6 @@
 #include "worker.h"
 #include <functional>
 
-namespace auc {
-
 enum SampleFormat {
   PCM16Bit,
 };
@@ -28,5 +26,4 @@ private:
   std::function<void(RawDataBufferInfo &)> pcm_callback_;
 };
 
-} // namespace auc
 #endif // AUDIO_CAPTURER_H

@@ -8,10 +8,10 @@ enum SampleFormat {
   PCM16Bit,
 };
 
-class AudioCapturer : public Worker {
+class FakeAudioCapturer : public Worker {
 public:
-  AudioCapturer() = default;
-  virtual ~AudioCapturer();
+  FakeAudioCapturer() = default;
+  virtual ~FakeAudioCapturer();
 
   bool Init(uint32_t sample_rate, uint32_t channel_count, uint32_t bit_rate);
   void AddCallback(std::function<void(RawDataBufferInfo &)> pcm_callback) {

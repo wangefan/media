@@ -1,25 +1,25 @@
-#include "audiocapturer.h"
+#include "fakeaudiocapturer.h"
 #include "dlog.h"
 #include "timesutil.h"
 
-AudioCapturer::~AudioCapturer() {}
+FakeAudioCapturer::~FakeAudioCapturer() {}
 
-bool AudioCapturer::Init(uint32_t sample_rate, uint32_t channel_count,
-                         uint32_t sample_format) {
-  LogInfo("AudioCapturer::Init(..) begin");
+bool FakeAudioCapturer::Init(uint32_t sample_rate, uint32_t channel_count,
+                             uint32_t sample_format) {
+  LogInfo("FakeAudioCapturer::Init(..) begin");
   sample_rate_ = sample_rate;
   channel_count_ = channel_count;
   sample_format_ = sample_format;
   return true;
 }
 
-void AudioCapturer::Work() {
-  LogInfo("AudioCapturer::Work() begin");
+void FakeAudioCapturer::Work() {
+  LogInfo("FakeAudioCapturer::Work() begin");
 
   const std::string input_pcm_name = "./media_files/count_s.pcm";
   FILE *pcm_fp = fopen(input_pcm_name.c_str(), "rb");
   if (pcm_fp == nullptr) {
-    LogInfo("AudioCapturer::Work(), open file error, end");
+    LogInfo("FakeAudioCapturer::Work(), open file error, end");
     if (pcm_callback_ != nullptr) {
       RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_ERROR,
                                              nullptr, -1, -1};
@@ -49,7 +49,7 @@ void AudioCapturer::Work() {
     {
       std::lock_guard<std::mutex> lock(is_running_mutex_);
       if (!is_running_) {
-        LogInfo("AudioCapturer::Work break!");
+        LogInfo("FakeAudioCapturer::Work break!");
         break;
       }
     }
@@ -76,7 +76,7 @@ void AudioCapturer::Work() {
       pcm_frame_start_time = pcm_frame_dst_time;
       pcm_frame_dst_time += frame_duration;
     } else {
-      LogInfo("AudioCapturer::Work(), capture with no data!");
+      LogInfo("FakeAudioCapturer::Work(), capture with no data!");
       reset_to_head = true;
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
@@ -90,5 +90,5 @@ void AudioCapturer::Work() {
                                            nullptr, -1, -1};
     pcm_callback_(raw_data_buffer_info);
   }
-  LogInfo("AudioCapturer::Work() end");
+  LogInfo("FakeAudioCapturer::Work() end");
 }

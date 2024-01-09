@@ -4,10 +4,10 @@
 #include "worker.h"
 #include <functional>
 
-class VideoCapturer : public Worker {
+class FakeVideoCapturer : public Worker {
 public:
-  VideoCapturer() = default;
-  virtual ~VideoCapturer();
+  FakeVideoCapturer() = default;
+  virtual ~FakeVideoCapturer();
 
   bool Init(uint32_t video_width, uint32_t video_height, uint32_t video_fps);
   void AddCallback(std::function<void(RawDataBufferInfo &)> yuv_callback) {

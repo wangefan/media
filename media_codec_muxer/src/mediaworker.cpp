@@ -1,6 +1,6 @@
 #include "mediaworker.h"
-#include "audiocapturer.h"
 #include "dlog.h"
+#include "fakeaudiocapturer.h"
 #include <functional>
 #include <memory>
 
@@ -12,14 +12,14 @@ constexpr int kVideoCaptureFps = 24;
 // Audio Capturing settings
 constexpr int kAudioCaptureSampleRate = 44100;
 constexpr int kAudioCaptureChannelCount = 2;
-constexpr int kAudioCaptureSampleFormat = auc::SampleFormat::PCM16Bit;
+constexpr int kAudioCaptureSampleFormat = SampleFormat::PCM16Bit;
 
 MediaWorker::~MediaWorker() {}
 
 bool MediaWorker::Init(const std::string &output_file_name) {
   LogInfo("MediaWorker::Init() begin");
   // Init Video Capture
-  video_capturer_ = std::make_unique<VideoCapturer>();
+  video_capturer_ = std::make_unique<FakeVideoCapturer>();
   video_capturer_->Init(kVideoCaptureWidth, kVideoCaptureHeight,
                         kVideoCaptureFps);
   video_capturer_->AddCallback(
@@ -33,8 +33,8 @@ bool MediaWorker::Init(const std::string &output_file_name) {
   video_encoder_->Init(video_input_format);
   video_encoder_->AddCallback(std::bind(&MediaWorker::EncodedVideoCallback,
                                         this, std::placeholders::_1));
-  // Init AudioCapturer
-  audio_capturer_ = std::make_unique<auc::AudioCapturer>();
+  // Init FakeAudioCapturer
+  audio_capturer_ = std::make_unique<FakeAudioCapturer>();
   audio_capturer_->Init(kAudioCaptureSampleRate, kAudioCaptureChannelCount,
                         kAudioCaptureSampleFormat);
   audio_capturer_->AddCallback(
@@ -130,7 +130,7 @@ void MediaWorker::YuvCallback(RawDataBufferInfo &raw_data_buffer_info) {
 }
 
 /*
- * callback from AudioCapturer, callback one frame pcm data with
+ * callback from FakeAudioCapturer, callback one frame pcm data with
  * nb_samples * channels * byte_per_sample.
  * Pass pcm with null means capture ended, encoder should stop its
  * process.

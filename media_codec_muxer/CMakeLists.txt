@@ -22,10 +22,10 @@ add_executable(${CMAKE_PROJECT_NAME}
   src/worker.cpp
   src/rawdatabufferinfo.h
   src/encodeddatabufferinfo.h
-  src/videocapturer.h
-  src/videocapturer.cpp
-  src/audiocapturer.h
-  src/audiocapturer.cpp
+  src/fakevideocapturer.h
+  src/fakevideocapturer.cpp
+  src/fakeaudiocapturer.h
+  src/fakeaudiocapturer.cpp
   src/encoder.h
   src/encoder.cpp
   src/audioencoder.h

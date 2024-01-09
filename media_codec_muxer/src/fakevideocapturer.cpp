@@ -1,24 +1,24 @@
-#include "videocapturer.h"
+#include "fakevideocapturer.h"
 #include "dlog.h"
 #include "timesutil.h"
 
-VideoCapturer::~VideoCapturer() {}
+FakeVideoCapturer::~FakeVideoCapturer() {}
 
-bool VideoCapturer::Init(uint32_t video_width, uint32_t video_height,
-                         uint32_t video_fps) {
-  LogInfo("VideoCapturer::Init(..) begin");
+bool FakeVideoCapturer::Init(uint32_t video_width, uint32_t video_height,
+                             uint32_t video_fps) {
+  LogInfo("FakeVideoCapturer::Init(..) begin");
   video_width_ = video_width;
   video_height_ = video_height;
   video_fps_ = video_fps;
   return true;
 }
 
-void VideoCapturer::Work() {
-  LogInfo("VideoCapturer::Work() begin");
+void FakeVideoCapturer::Work() {
+  LogInfo("FakeVideoCapturer::Work() begin");
   const std::string input_yuv_name = "./media_files/count_s.yuv";
   FILE *yvu_fp = fopen(input_yuv_name.c_str(), "rb");
   if (yvu_fp == nullptr) {
-    LogInfo("VideoCapturer::Work(), open file error, end");
+    LogInfo("FakeVideoCapturer::Work(), open file error, end");
     if (yuv_callback_ != nullptr) {
       RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_ERROR,
                                              nullptr, -1, -1};
@@ -49,7 +49,7 @@ void VideoCapturer::Work() {
     {
       std::lock_guard<std::mutex> lock(is_running_mutex_);
       if (!is_running_) {
-        LogInfo("VideoCapturer::Work break!");
+        LogInfo("FakeVideoCapturer::Work break!");
         break;
       }
     }
@@ -76,7 +76,7 @@ void VideoCapturer::Work() {
       yuv_frame_start_time = yuv_frame_dst_time;
       yuv_frame_dst_time += frame_duration;
     } else {
-      LogInfo("VideoCapturer::Work(), capture with no data!");
+      LogInfo("FakeVideoCapturer::Work(), capture with no data!");
       reset_to_head = true;
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
@@ -90,5 +90,5 @@ void VideoCapturer::Work() {
                                            nullptr, -1, -1};
     yuv_callback_(raw_data_buffer_info);
   }
-  LogInfo("VideoCapturer::Work() end");
+  LogInfo("FakeVideoCapturer::Work() end");
 }

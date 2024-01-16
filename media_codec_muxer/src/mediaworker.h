@@ -1,7 +1,8 @@
 #ifndef MEDIAWORKER_H
 #define MEDIAWORKER_H
 #include "audioencoder.h"
-#include "fakeaudiocapturer.h"
+#include "micaudiocapturer.h"
+#include "desktopcapturer.h"
 #include "fakevideocapturer.h"
 #include "mediamuxer.h"
 #include "videoencoder.h"
@@ -31,8 +32,8 @@ private:
   void EncodedAudioCallback(EncodedDataBufferInfo &encoded_data_buffer_info);
 
 private:
-  std::unique_ptr<FakeVideoCapturer> video_capturer_;
-  std::unique_ptr<FakeAudioCapturer> audio_capturer_;
+  std::unique_ptr<DesktopCapturer> video_capturer_;
+  std::unique_ptr<MicAudioCapturer> audio_capturer_;
   std::unique_ptr<VideoEncoder> video_encoder_;
   std::unique_ptr<AudioEncoder> audio_encoder_;
   std::unique_ptr<MediaMuxer> media_muxer_;

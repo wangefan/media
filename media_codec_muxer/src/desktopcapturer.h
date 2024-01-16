@@ -1,13 +1,13 @@
-#ifndef FAKE_VIDEO_CAPTURER_H
-#define FAKE_VIDEO_CAPTURER_H
+#ifndef DESKTOP_VIDEO_CAPTURER_H
+#define DESKTOP_VIDEO_CAPTURER_H
 #include "rawdatabufferinfo.h"
 #include "worker.h"
 #include <functional>
 
-class FakeVideoCapturer : public Worker {
+class DesktopCapturer : public Worker {
 public:
-  FakeVideoCapturer() = default;
-  virtual ~FakeVideoCapturer();
+  DesktopCapturer() = default;
+  virtual ~DesktopCapturer();
 
   bool Init(uint32_t video_width, uint32_t video_height, uint32_t video_fps);
   void AddCallback(std::function<void(RawDataBufferInfo &)> yuv_callback) {
@@ -22,4 +22,4 @@ private:
   std::function<void(RawDataBufferInfo &)> yuv_callback_;
 };
 
-#endif // FAKE_VIDEO_CAPTURER_H
+#endif // DESKTOP_VIDEO_CAPTURER_H

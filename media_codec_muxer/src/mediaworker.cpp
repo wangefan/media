@@ -1,13 +1,16 @@
 #include "mediaworker.h"
 #include "dlog.h"
-#include "fakeaudiocapturer.h"
 #include <functional>
 #include <memory>
 
 // Video Capturing settings
-constexpr int kVideoCaptureWidth = 854;
+/*constexpr int kVideoCaptureWidth = 854;
 constexpr int kVideoCaptureHeight = 480;
-constexpr int kVideoCaptureFps = 24;
+constexpr int kVideoCaptureFps = 24;*/
+
+const auto kVideoCaptureWidth = 1920;
+const auto kVideoCaptureHeight = 1080;
+const auto kVideoCaptureFps = 25;
 
 // Audio Capturing settings
 constexpr int kAudioCaptureSampleRate = 44100;
@@ -19,7 +22,7 @@ MediaWorker::~MediaWorker() {}
 bool MediaWorker::Init(const std::string &output_file_name) {
   LogInfo("MediaWorker::Init() begin");
   // Init Video Capture
-  video_capturer_ = std::make_unique<FakeVideoCapturer>();
+  video_capturer_ = std::make_unique<DesktopCapturer>();
   video_capturer_->Init(kVideoCaptureWidth, kVideoCaptureHeight,
                         kVideoCaptureFps);
   video_capturer_->AddCallback(
@@ -34,7 +37,7 @@ bool MediaWorker::Init(const std::string &output_file_name) {
   video_encoder_->AddCallback(std::bind(&MediaWorker::EncodedVideoCallback,
                                         this, std::placeholders::_1));
   // Init FakeAudioCapturer
-  audio_capturer_ = std::make_unique<FakeAudioCapturer>();
+  audio_capturer_ = std::make_unique<MicAudioCapturer>();
   audio_capturer_->Init(kAudioCaptureSampleRate, kAudioCaptureChannelCount,
                         kAudioCaptureSampleFormat);
   audio_capturer_->AddCallback(

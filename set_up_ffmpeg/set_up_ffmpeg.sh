@@ -135,7 +135,10 @@ cd ~/ffmpeg_sources && \
  make install && \
  hash -r
  
-sudo sh -c "echo $HOME/ffmpeg_build/lib/ >> /etc/ld.so.conf"
-sudo ldconfig
+#Add libraries linking path, for compiling usage.
+echo "export PKG_CONFIG_PATH=$HOME/ffmpeg_build/lib/pkgconfig:\$PKG_CONFIG_PATH" >> ~/.bash_profile
+echo "Please restart your terminal or run 'source ~/.bash_profile' to apply changes."
 
-echo "腳本執行完成"
+#Adding dynamic libraries search path when launching executable file, for runtime usage.
+echo "/$HOME/ffmpeg_build/lib" | sudo tee /etc/ld.so.conf.d/ffmpeg.conf
+sudo ldconfig

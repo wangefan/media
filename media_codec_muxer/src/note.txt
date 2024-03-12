@@ -1,0 +1,40 @@
+
+2. raw_data_queue_cv_的wait不能用lock_guard
+原因可能是因為
+lock_guard不能在scope內短暫手動解鎖 lock.unlock
+
+std::unique_lock<std::mutex> lock(raw_data_queue_mutex_);
+    while (raw_data_queue_.empty() && is_consumer_running_) {
+        LogInfo("AudioEncoder::Work, has no raw data to encode, wait..");
+        raw_data_queue_cv_.wait(lock);
+
+3.raw_data_queue_的element type是RawDataBufferInfo,
+在把raw_data_queue_的element轉到temp_raw_data_queue時一定要用
+sd::move, 原因是因為type是RawDataBufferInfo裡面有std::unique_ptr<uint8_t[]> raw_data
+,紀錄一下std::move對RawDataBufferInfo裡面每個成員的動作
+      while (!raw_data_queue_.empty()) {
+        temp_raw_data_queue.push(std::move(raw_data_queue_.front()));
+        raw_data_queue_.pop();
+      }
+
+4.送出demux的start time_stamp必須是從0開始, 否則封裝出來的檔案
+不能撥
+
+5.紀錄一下gop_size物理意義
+
+6.為何video encoder 之中avframe 不用 av_frame_get_buffer
+
+7.
+ffmpeg -i count.mp4 -an -c:v rawvideo -pix_fmt yuv420p count.yuv
+ffmpeg -i count.mp4 -vn -c:a pcm_s16le -f s16le count.pcm
+
+8.
+// 抓桌面影像並且輸出到標準輸出流
+// | pipe接上輸出流當作輸入
+// ffplay
+~/ffmpeg_bin/ffmpeg -f x11grab -video_size 1920x1080 -framerate 25 -i :0.0+0,0 -pix_fmt yuv420p -f rawvideo - | ~/ffmpeg_bin/ffplay -f rawvideo -pixel_format yuv420p -video_size 1920x1080 -framerate 25 -
+
+
+~/ffmpeg_bin/ffmpeg -f alsa -i default -acodec pcm_s16le -ar 44100 -ac 2 -f s16le -ar 44100 -ac 2 - | ~/ffmpeg_bin/ffplay -f s16le -ar 44100 -ac 2 -
+
+9.一開始有遇到錄製到後面,V/A漸漸會不sync,原因是因為timestamp使用精度不夠高(ms),換成microsec就解決了

@@ -97,7 +97,7 @@ bool Encoder::Stop() {
   return true;
 }
 
-bool Encoder::QueueDataToEncode(RawDataBufferInfo &raw_data_buffer_info) {
+bool Encoder::QueueDataToEncode(RawDataBufferInfo &&raw_data_buffer_info) {
   LogDebug("%s::QueueDataToEncode called", GetClassName());
   {
     std::lock_guard<std::mutex> lock(raw_data_queue_mutex_);

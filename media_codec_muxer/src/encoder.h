@@ -24,7 +24,7 @@ public:
   bool Start();
   void Work();
   bool Stop();
-  bool QueueDataToEncode(RawDataBufferInfo &raw_data_buffer_info);
+  bool QueueDataToEncode(RawDataBufferInfo &&raw_data_buffer_info);
 
   AVCodecContext *GetCodecContext() { return codec_ctx_; }
   std::shared_ptr<MediaFormat> GetInputFormat() { return input_format_; }

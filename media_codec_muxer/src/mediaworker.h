@@ -23,10 +23,10 @@ public:
 private:
   // callback from FakeVideoCapturer, callback one frame yuv data with
   // yuv_frame_size = y_frame_size + u_frame_size + v_frame_size
-  void YuvCallback(RawDataBufferInfo &raw_data_buffer_info);
+  void YuvCallback(RawDataBufferInfo &&raw_data_buffer_info);
   // callback from FakeAudioCapturer, callback one frame pcm data with
   // nb_samples * channels * byte_per_sample
-  void PcmCallback(RawDataBufferInfo &raw_data_buffer_info);
+  void PcmCallback(RawDataBufferInfo &&raw_data_buffer_info);
 
   void EncodedVideoCallback(EncodedDataBufferInfo &encoded_data_buffer_info);
   void EncodedAudioCallback(EncodedDataBufferInfo &encoded_data_buffer_info);

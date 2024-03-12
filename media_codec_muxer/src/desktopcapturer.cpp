@@ -25,7 +25,7 @@ void DesktopCapturer::Work() {
     if (yuv_callback_ != nullptr) {
       RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_ERROR,
                                              nullptr, -1, -1};
-      yuv_callback_(raw_data_buffer_info);
+      yuv_callback_(std::move(raw_data_buffer_info));
     }
     return;
   }
@@ -45,7 +45,7 @@ void DesktopCapturer::Work() {
   if (yuv_callback_ != nullptr) {
     RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_BEGIN,
                                            nullptr, -1, -1};
-    yuv_callback_(raw_data_buffer_info);
+    yuv_callback_(std::move(raw_data_buffer_info));
   }
 
   while (true) {
@@ -74,7 +74,7 @@ void DesktopCapturer::Work() {
         RawDataBufferInfo raw_data_buffer_info{
             RawDataState::RAW_DATA_STATE_SENDING, std::move(raw_data), size,
             yuv_frame_start_time - yuv_record_start_time};
-        yuv_callback_(raw_data_buffer_info);
+        yuv_callback_(std::move(raw_data_buffer_info));
       }
       yuv_frame_start_time = yuv_frame_dst_time;
       yuv_frame_dst_time += frame_duration;
@@ -91,7 +91,7 @@ void DesktopCapturer::Work() {
   if (yuv_callback_ != nullptr) {
     RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_END,
                                            nullptr, -1, -1};
-    yuv_callback_(raw_data_buffer_info);
+    yuv_callback_(std::move(raw_data_buffer_info));
   }
   LogInfo("DesktopCapturer::Work() end");
 }

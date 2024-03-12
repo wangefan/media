@@ -25,7 +25,7 @@ void MicAudioCapturer::Work() {
     if (pcm_callback_ != nullptr) {
       RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_ERROR,
                                              nullptr, -1, -1};
-      pcm_callback_(raw_data_buffer_info);
+      pcm_callback_(std::move(raw_data_buffer_info));
     }
     return;
   }
@@ -44,7 +44,7 @@ void MicAudioCapturer::Work() {
   if (pcm_callback_ != nullptr) {
     RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_BEGIN,
                                            nullptr, -1, -1};
-    pcm_callback_(raw_data_buffer_info);
+    pcm_callback_(std::move(raw_data_buffer_info));
   }
 
   while (true) {
@@ -73,7 +73,7 @@ void MicAudioCapturer::Work() {
         RawDataBufferInfo raw_data_buffer_info{
             RawDataState::RAW_DATA_STATE_SENDING, std::move(raw_data), size,
             pcm_frame_start_time - pcm_record_start_time};
-        pcm_callback_(raw_data_buffer_info);
+        pcm_callback_(std::move(raw_data_buffer_info));
       }
       pcm_frame_start_time = pcm_frame_dst_time;
       pcm_frame_dst_time += frame_duration;
@@ -90,7 +90,7 @@ void MicAudioCapturer::Work() {
   if (pcm_callback_ != nullptr) {
     RawDataBufferInfo raw_data_buffer_info{RawDataState::RAW_DATA_STATE_END,
                                            nullptr, -1, -1};
-    pcm_callback_(raw_data_buffer_info);
+    pcm_callback_(std::move(raw_data_buffer_info));
   }
   LogInfo("MicAudioCapturer::Work() end");
 }

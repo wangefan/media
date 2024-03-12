@@ -110,7 +110,7 @@ void MediaWorker::Work() {
   LogInfo("MediaWorker::Work() end");
 }
 
-void MediaWorker::YuvCallback(RawDataBufferInfo &raw_data_buffer_info) {
+void MediaWorker::YuvCallback(RawDataBufferInfo &&raw_data_buffer_info) {
   if (raw_data_buffer_info.state == RawDataState::RAW_DATA_STATE_BEGIN) {
     LogDebug("MediaWorker::YuvCallback(..) called: begin to capture video..");
     if (!video_encoder_->Start()) {
@@ -120,7 +120,7 @@ void MediaWorker::YuvCallback(RawDataBufferInfo &raw_data_buffer_info) {
              RawDataState::RAW_DATA_STATE_SENDING) {
     LogDebug("MediaWorker::YuvCallback(..) called: size:%d, %ld",
              raw_data_buffer_info.size, raw_data_buffer_info.time_stamp);
-    video_encoder_->QueueDataToEncode(raw_data_buffer_info);
+    video_encoder_->QueueDataToEncode(std::move(raw_data_buffer_info));
   } else if (raw_data_buffer_info.state == RawDataState::RAW_DATA_STATE_END) {
     LogInfo("MediaWorker::YuvCallback(..) called: will call "
             "video_encoder_->Stop()");
@@ -138,7 +138,7 @@ void MediaWorker::YuvCallback(RawDataBufferInfo &raw_data_buffer_info) {
  * Pass pcm with null means capture ended, encoder should stop its
  * process.
  */
-void MediaWorker::PcmCallback(RawDataBufferInfo &raw_data_buffer_info) {
+void MediaWorker::PcmCallback(RawDataBufferInfo &&raw_data_buffer_info) {
   if (raw_data_buffer_info.state == RawDataState::RAW_DATA_STATE_BEGIN) {
     LogDebug("MediaWorker::PcmCallback(..) called: begin to capture audio..");
     if (!audio_encoder_->Start()) {
@@ -148,7 +148,7 @@ void MediaWorker::PcmCallback(RawDataBufferInfo &raw_data_buffer_info) {
              RawDataState::RAW_DATA_STATE_SENDING) {
     LogDebug("MediaWorker::PcmCallback(..) called: size:%d, %ld",
              raw_data_buffer_info.size, raw_data_buffer_info.time_stamp);
-    audio_encoder_->QueueDataToEncode(raw_data_buffer_info);
+    audio_encoder_->QueueDataToEncode(std::move(raw_data_buffer_info));
   } else if (raw_data_buffer_info.state == RawDataState::RAW_DATA_STATE_END) {
     LogInfo("MediaWorker::PcmCallback(..) called: will call "
             "audio_encoder_->Stop()");
